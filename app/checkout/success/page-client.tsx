@@ -1,19 +1,29 @@
-'use client'
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { CheckCircle, Download, Home } from 'lucide-react'
-import Link from 'next/link'
-import QRCode from 'qrcode'
-import { useEffect, useState } from 'react'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, Download, Home } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
+import QRCode from "qrcode";
+import { useEffect, useState } from "react";
 
 interface SuccessPageClientProps {
-  order: any
-  orderItems: any[]
+  order: any;
+  orderItems: any[];
 }
 
-export function SuccessPageClient({ order, orderItems }: SuccessPageClientProps) {
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
+export function SuccessPageClient({
+  order,
+  orderItems,
+}: SuccessPageClientProps) {
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
 
   useEffect(() => {
     if (order.qr_token) {
@@ -21,32 +31,32 @@ export function SuccessPageClient({ order, orderItems }: SuccessPageClientProps)
         width: 300,
         margin: 2,
         color: {
-          dark: '#000000',
-          light: '#FFFFFF',
+          dark: "#000000",
+          light: "#FFFFFF",
         },
-      }).then(setQrCodeUrl)
+      }).then(setQrCodeUrl);
     }
-  }, [order.qr_token])
+  }, [order.qr_token]);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
+    return new Date(dateString).toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   const downloadQRCode = () => {
-    if (!qrCodeUrl) return
-    
-    const link = document.createElement('a')
-    link.href = qrCodeUrl
-    link.download = `ticket-${order.id}.png`
-    link.click()
-  }
+    if (!qrCodeUrl) return;
+
+    const link = document.createElement("a");
+    link.href = qrCodeUrl;
+    link.download = `ticket-${order.id}.png`;
+    link.click();
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -59,9 +69,7 @@ export function SuccessPageClient({ order, orderItems }: SuccessPageClientProps)
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Payment Successful!
           </h1>
-          <p className="text-xl text-gray-600">
-            Thank you for your purchase
-          </p>
+          <p className="text-xl text-gray-600">Thank you for your purchase</p>
         </div>
 
         {/* Order Details */}
@@ -113,9 +121,11 @@ export function SuccessPageClient({ order, orderItems }: SuccessPageClientProps)
               {qrCodeUrl ? (
                 <>
                   <div className="bg-white p-4 rounded-lg shadow-sm">
-                    <img 
-                      src={qrCodeUrl} 
-                      alt="Ticket QR Code" 
+                    <Image
+                      src={qrCodeUrl}
+                      alt="Ticket QR Code"
+                      width={256}
+                      height={256}
                       className="w-64 h-64"
                     />
                   </div>
@@ -142,16 +152,16 @@ export function SuccessPageClient({ order, orderItems }: SuccessPageClientProps)
           <CardContent>
             <div className="space-y-3">
               {orderItems.map((item, index) => (
-                <div 
-                  key={item.id} 
-                  className="p-4 bg-gray-50 rounded-lg"
-                >
+                <div key={item.id} className="p-4 bg-gray-50 rounded-lg">
                   <p className="font-medium">
-                    Ticket #{index + 1} - {item.type === 'child' ? 'Child' : 'Adult'}
+                    Ticket #{index + 1} -{" "}
+                    {item.type === "child" ? "Child" : "Adult"}
                   </p>
                   <p className="text-sm text-gray-600">{item.holder_name}</p>
                   {item.holder_age && (
-                    <p className="text-sm text-gray-600">Age: {item.holder_age}</p>
+                    <p className="text-sm text-gray-600">
+                      Age: {item.holder_age}
+                    </p>
                   )}
                 </div>
               ))}
@@ -162,7 +172,9 @@ export function SuccessPageClient({ order, orderItems }: SuccessPageClientProps)
         {/* Important Information */}
         <Card className="mb-6 border-blue-200 bg-blue-50">
           <CardHeader>
-            <CardTitle className="text-blue-900">Important Information</CardTitle>
+            <CardTitle className="text-blue-900">
+              Important Information
+            </CardTitle>
           </CardHeader>
           <CardContent className="text-blue-800 space-y-2">
             <p>✓ A confirmation email has been sent to {order.email}</p>
@@ -183,5 +195,5 @@ export function SuccessPageClient({ order, orderItems }: SuccessPageClientProps)
         </div>
       </div>
     </div>
-  )
+  );
 }

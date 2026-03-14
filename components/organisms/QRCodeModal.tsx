@@ -1,73 +1,76 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Loader2, Download } from 'lucide-react'
-import QRCode from 'qrcode'
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Loader2, Download } from "lucide-react";
+import Image from "next/image";
+import QRCode from "qrcode";
 
 interface QRCodeModalProps {
-  orderId: string
-  onClose: () => void
+  orderId: string;
+  onClose: () => void;
 }
 
 export function QRCodeModal({ orderId, onClose }: QRCodeModalProps) {
-  const [loading, setLoading] = useState(true)
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
-  const [qrToken, setQrToken] = useState<string>('')
-  const [eventTitle, setEventTitle] = useState<string>('')
+  const [loading, setLoading] = useState(true);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+  const [qrToken, setQrToken] = useState<string>("");
+  const [eventTitle, setEventTitle] = useState<string>("");
 
   useEffect(() => {
     async function fetchOrderQR() {
-      const supabase = createClient()
+      const supabase = createClient();
 
       const { data: order } = await supabase
-        .from('orders')
-        .select(`
+        .from("orders")
+        .select(
+          `
           qr_token,
           events (
             title
           )
-        `)
-        .eq('id', orderId)
-        .single()
+        `,
+        )
+        .eq("id", orderId)
+        .single();
 
       if (order && order.qr_token) {
-        setQrToken(order.qr_token)
-        setEventTitle((order.events as any).title)
-        
+        setQrToken(order.qr_token);
+        setEventTitle((order.events as any).title);
+
         const url = await QRCode.toDataURL(order.qr_token, {
           width: 400,
           margin: 2,
           color: {
-            dark: '#000000',
-            light: '#FFFFFF',
+            dark: "#000000",
+            light: "#FFFFFF",
           },
-        })
-        
-        setQrCodeUrl(url)
+        });
+
+        setQrCodeUrl(url);
       }
-      
-      setLoading(false)
+
+      setLoading(false);
     }
 
-    fetchOrderQR()
-  }, [orderId])
+    fetchOrderQR();
+  }, [orderId]);
 
   const handleDownload = () => {
-    const link = document.createElement('a')
-    link.href = qrCodeUrl
-    link.download = `ticket-${qrToken.substring(0, 8)}.png`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+    const link = document.createElement("a");
+    link.href = qrCodeUrl;
+    link.download = `ticket-${qrToken.substring(0, 8)}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -87,15 +90,15 @@ export function QRCodeModal({ orderId, onClose }: QRCodeModalProps) {
                 Show this QR code at the event entrance
               </p>
               <div className="bg-white p-6 rounded-lg border-2 border-gray-200 inline-block">
-                <img
+                <Image
                   src={qrCodeUrl}
                   alt="Ticket QR Code"
+                  width={256}
+                  height={256}
                   className="w-64 h-64"
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-4">
-                Event: {eventTitle}
-              </p>
+              <p className="text-xs text-gray-500 mt-4">Event: {eventTitle}</p>
             </div>
 
             <div className="flex gap-2">
@@ -119,5 +122,5 @@ export function QRCodeModal({ orderId, onClose }: QRCodeModalProps) {
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }

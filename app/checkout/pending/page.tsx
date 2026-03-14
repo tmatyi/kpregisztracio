@@ -1,14 +1,14 @@
-'use client'
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Clock, Home } from 'lucide-react'
-import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Clock, Home } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 export default function PendingPage() {
-  const searchParams = useSearchParams()
-  const orderId = searchParams.get('orderId')
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get("orderId");
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -18,7 +18,9 @@ export default function PendingPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mb-4">
               <Clock className="w-10 h-10 text-yellow-600" />
             </div>
-            <CardTitle className="text-2xl text-center">Payment Pending</CardTitle>
+            <CardTitle className="text-2xl text-center">
+              Payment Pending
+            </CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -33,8 +35,8 @@ export default function PendingPage() {
 
           <div className="space-y-3">
             <p className="text-sm text-gray-600">
-              We're waiting for confirmation from the payment provider. 
-              You will receive an email once the payment is confirmed.
+              We&apos;re waiting for confirmation from the payment provider. You
+              will receive an email once the payment is confirmed.
             </p>
             <p className="text-sm text-gray-600">
               This usually takes a few minutes.
@@ -50,5 +52,5 @@ export default function PendingPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

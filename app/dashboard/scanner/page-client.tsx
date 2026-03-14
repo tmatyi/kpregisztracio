@@ -1,82 +1,50 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useRef } from 'react'
-import { Html5QrcodeScanner } from 'html5-qrcode'
-import { createClient } from '@/lib/supabase/client'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { CheckCircle2, XCircle, AlertCircle, Camera, Users } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Html5QrcodeScanner } from "html5-qrcode";
+import { createClient } from "@/lib/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Camera,
+  Users,
+} from "lucide-react";
 
 interface ScanResult {
-  type: 'success' | 'error' | 'warning'
-  message: string
+  type: "success" | "error" | "warning";
+  message: string;
   details?: {
-    eventTitle?: string
-    participantCount?: number
-    orderType?: string
-  }
+    eventTitle?: string;
+    participantCount?: number;
+    orderType?: string;
+  };
 }
 
 interface ScannerClientProps {
-  userName: string
+  userName: string;
 }
 
 export function ScannerClient({ userName }: ScannerClientProps) {
-  const [scanResult, setScanResult] = useState<ScanResult | null>(null)
-  const [isScanning, setIsScanning] = useState(false)
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null)
-  const [scanHistory, setScanHistory] = useState<Array<ScanResult & { timestamp: Date }>>([])
-
-  useEffect(() => {
-    if (isScanning && !scannerRef.current) {
-      scannerRef.current = new Html5QrcodeScanner(
-        'qr-reader',
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-        },
-        false
-      )
-
-      scannerRef.current.render(onScanSuccess, onScanError)
-    }
-
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(console.error)
-        scannerRef.current = null
-      }
-    }
-  }, [isScanning])
-
-  async function onScanSuccess(decodedText: string) {
-    if (scannerRef.current) {
-      scannerRef.current.pause(true)
-    }
-
-    await verifyQRCode(decodedText)
-
-    setTimeout(() => {
-      if (scannerRef.current) {
-        scannerRef.current.resume()
-      }
-    }, 3000)
-  }
-
-  function onScanError(error: string) {
-    // Ignore scan errors (they happen frequently during scanning)
-  }
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const [scanHistory, setScanHistory] = useState<
+    Array<ScanResult & { timestamp: Date }>
+  >([]);
 
   async function verifyQRCode(qrToken: string) {
-    const supabase = createClient()
+    const supabase = createClient();
 
     try {
       // Fetch order with QR token
       const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .select(`
+        .from("orders")
+        .select(
+          `
           id,
           status,
           used_at,
@@ -88,105 +56,166 @@ export function ScannerClient({ userName }: ScannerClientProps) {
           order_items (
             id
           )
-        `)
-        .eq('qr_token', qrToken)
-        .single()
+        `,
+        )
+        .eq("qr_token", qrToken)
+        .single();
 
       if (orderError || !order) {
         const result: ScanResult = {
-          type: 'error',
-          message: 'Invalid QR Code',
-        }
-        setScanResult(result)
-        setScanHistory(prev => [{ ...result, timestamp: new Date() }, ...prev.slice(0, 9)])
-        return
+          type: "error",
+          message: "Invalid QR Code",
+        };
+        setScanResult(result);
+        setScanHistory((prev) => [
+          { ...result, timestamp: new Date() },
+          ...prev.slice(0, 9),
+        ]);
+        return;
       }
 
       // Check if payment is completed
-      if (order.status !== 'paid') {
+      if (order.status !== "paid") {
         const result: ScanResult = {
-          type: 'warning',
-          message: 'Payment Not Completed',
-        }
-        setScanResult(result)
-        setScanHistory(prev => [{ ...result, timestamp: new Date() }, ...prev.slice(0, 9)])
-        return
+          type: "warning",
+          message: "Payment Not Completed",
+        };
+        setScanResult(result);
+        setScanHistory((prev) => [
+          { ...result, timestamp: new Date() },
+          ...prev.slice(0, 9),
+        ]);
+        return;
       }
 
       // Check if already used
       if (order.used_at) {
         const result: ScanResult = {
-          type: 'warning',
-          message: 'Ticket Already Used',
+          type: "warning",
+          message: "Ticket Already Used",
           details: {
             eventTitle: (order.events as any)?.title,
           },
-        }
-        setScanResult(result)
-        setScanHistory(prev => [{ ...result, timestamp: new Date() }, ...prev.slice(0, 9)])
-        return
+        };
+        setScanResult(result);
+        setScanHistory((prev) => [
+          { ...result, timestamp: new Date() },
+          ...prev.slice(0, 9),
+        ]);
+        return;
       }
 
       // Mark as used
-      const { data: { user } } = await supabase.auth.getUser()
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       const { error: updateError } = await supabase
-        .from('orders')
+        .from("orders")
         .update({
           used_at: new Date().toISOString(),
           scanned_by: user?.id,
         })
-        .eq('id', order.id)
+        .eq("id", order.id);
 
       if (updateError) {
         const result: ScanResult = {
-          type: 'error',
-          message: 'Failed to mark ticket as used',
-        }
-        setScanResult(result)
-        setScanHistory(prev => [{ ...result, timestamp: new Date() }, ...prev.slice(0, 9)])
-        return
+          type: "error",
+          message: "Failed to mark ticket as used",
+        };
+        setScanResult(result);
+        setScanHistory((prev) => [
+          { ...result, timestamp: new Date() },
+          ...prev.slice(0, 9),
+        ]);
+        return;
       }
 
       // Success
       const result: ScanResult = {
-        type: 'success',
-        message: 'Valid Ticket - Entry Granted',
+        type: "success",
+        message: "Ticket Verified Successfully",
         details: {
           eventTitle: (order.events as any)?.title,
           participantCount: order.order_items?.length || 0,
           orderType: order.type,
         },
-      }
-      setScanResult(result)
-      setScanHistory(prev => [{ ...result, timestamp: new Date() }, ...prev.slice(0, 9)])
+      };
+      setScanResult(result);
+      setScanHistory((prev) => [
+        { ...result, timestamp: new Date() },
+        ...prev.slice(0, 9),
+      ]);
     } catch (error) {
-      console.error('QR verification error:', error)
       const result: ScanResult = {
-        type: 'error',
-        message: 'Verification failed',
-      }
-      setScanResult(result)
-      setScanHistory(prev => [{ ...result, timestamp: new Date() }, ...prev.slice(0, 9)])
+        type: "error",
+        message: "Error verifying ticket",
+      };
+      setScanResult(result);
+      setScanHistory((prev) => [
+        { ...result, timestamp: new Date() },
+        ...prev.slice(0, 9),
+      ]);
     }
   }
+
+  const onScanSuccess = useCallback(async (decodedText: string) => {
+    if (scannerRef.current) {
+      scannerRef.current.pause(true);
+    }
+
+    await verifyQRCode(decodedText);
+
+    setTimeout(() => {
+      if (scannerRef.current) {
+        scannerRef.current.resume();
+      }
+    }, 3000);
+  }, []);
+
+  const onScanError = useCallback((error: string) => {
+    // Ignore scan errors (they happen frequently during scanning)
+  }, []);
+
+  useEffect(() => {
+    if (isScanning && !scannerRef.current) {
+      scannerRef.current = new Html5QrcodeScanner(
+        "qr-reader",
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
+        },
+        false,
+      );
+
+      scannerRef.current.render(onScanSuccess, onScanError);
+    }
+
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(console.error);
+        scannerRef.current = null;
+      }
+    };
+  }, [isScanning, onScanSuccess, onScanError]);
 
   const getAlertIcon = (type: string) => {
     switch (type) {
-      case 'success':
-        return <CheckCircle2 className="h-5 w-5" />
-      case 'error':
-        return <XCircle className="h-5 w-5" />
-      case 'warning':
-        return <AlertCircle className="h-5 w-5" />
+      case "success":
+        return <CheckCircle2 className="h-5 w-5" />;
+      case "error":
+        return <XCircle className="h-5 w-5" />;
+      case "warning":
+        return <AlertCircle className="h-5 w-5" />;
       default:
-        return null
+        return null;
     }
-  }
+  };
 
-  const getAlertVariant = (type: string): 'default' | 'destructive' => {
-    return type === 'error' ? 'destructive' : 'default'
-  }
+  const getAlertVariant = (type: string): "default" | "destructive" => {
+    return type === "error" ? "destructive" : "default";
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -221,8 +250,8 @@ export function ScannerClient({ userName }: ScannerClientProps) {
                 <div id="qr-reader" className="w-full"></div>
                 <Button
                   onClick={() => {
-                    setIsScanning(false)
-                    setScanResult(null)
+                    setIsScanning(false);
+                    setScanResult(null);
                   }}
                   variant="outline"
                   className="w-full mt-4"
@@ -239,11 +268,11 @@ export function ScannerClient({ userName }: ScannerClientProps) {
           <Alert
             variant={getAlertVariant(scanResult.type)}
             className={`mb-6 ${
-              scanResult.type === 'success'
-                ? 'border-green-500 bg-green-50'
-                : scanResult.type === 'warning'
-                ? 'border-yellow-500 bg-yellow-50'
-                : ''
+              scanResult.type === "success"
+                ? "border-green-500 bg-green-50"
+                : scanResult.type === "warning"
+                  ? "border-yellow-500 bg-yellow-50"
+                  : ""
             }`}
           >
             {getAlertIcon(scanResult.type)}
@@ -262,7 +291,7 @@ export function ScannerClient({ userName }: ScannerClientProps) {
                     <Users className="h-4 w-4" />
                     <span>
                       {scanResult.details.participantCount} participant
-                      {scanResult.details.participantCount !== 1 ? 's' : ''}
+                      {scanResult.details.participantCount !== 1 ? "s" : ""}
                     </span>
                     {scanResult.details.orderType && (
                       <span className="text-sm text-gray-600">
@@ -292,17 +321,19 @@ export function ScannerClient({ userName }: ScannerClientProps) {
                     <div className="flex items-center gap-3">
                       <div
                         className={`${
-                          scan.type === 'success'
-                            ? 'text-green-600'
-                            : scan.type === 'warning'
-                            ? 'text-yellow-600'
-                            : 'text-red-600'
+                          scan.type === "success"
+                            ? "text-green-600"
+                            : scan.type === "warning"
+                              ? "text-yellow-600"
+                              : "text-red-600"
                         }`}
                       >
                         {getAlertIcon(scan.type)}
                       </div>
                       <div>
-                        <div className="font-medium text-sm">{scan.message}</div>
+                        <div className="font-medium text-sm">
+                          {scan.message}
+                        </div>
                         {scan.details?.eventTitle && (
                           <div className="text-xs text-gray-600">
                             {scan.details.eventTitle}
@@ -321,5 +352,5 @@ export function ScannerClient({ userName }: ScannerClientProps) {
         )}
       </div>
     </div>
-  )
+  );
 }
