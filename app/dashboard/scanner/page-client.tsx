@@ -90,11 +90,16 @@ export function ScannerClient({ userName }: ScannerClientProps) {
 
       // Check if already used
       if (order.used_at) {
+        // Convert events array to single event object
+        const event = Array.isArray((order as any).events)
+          ? (order as any).events[0]
+          : (order as any).events;
+
         const result: ScanResult = {
           type: "warning",
           message: "Ticket Already Used",
           details: {
-            eventTitle: (order.events as any)?.title,
+            eventTitle: event?.title,
           },
         };
         setScanResult(result);
@@ -132,11 +137,16 @@ export function ScannerClient({ userName }: ScannerClientProps) {
       }
 
       // Success
+      // Convert events array to single event object
+      const event = Array.isArray((order as any).events)
+        ? (order as any).events[0]
+        : (order as any).events;
+
       const result: ScanResult = {
         type: "success",
         message: "Ticket Verified Successfully",
         details: {
-          eventTitle: (order.events as any)?.title,
+          eventTitle: event?.title,
           participantCount: order.order_items?.length || 0,
           orderType: order.type,
         },

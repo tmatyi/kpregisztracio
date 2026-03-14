@@ -42,8 +42,13 @@ export function QRCodeModal({ orderId, onClose }: QRCodeModalProps) {
         .single();
 
       if (order && order.qr_token) {
+        // Convert events array to single event object
+        const event = Array.isArray((order as any).events)
+          ? (order as any).events[0]
+          : (order as any).events;
+
         setQrToken(order.qr_token);
-        setEventTitle((order.events as any).title);
+        setEventTitle(event?.title || "");
 
         const url = await QRCode.toDataURL(order.qr_token, {
           width: 400,

@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       // Send confirmation email when payment is successful
       if (newStatus === "paid") {
         try {
-          const { data: orderDetails } = await supabase
+          const { data: orderDetailsData } = await supabase
             .from("orders")
             .select(
               `
@@ -84,23 +84,28 @@ export async function POST(request: NextRequest) {
             .eq("id", orderId)
             .single();
 
-          if (orderDetails) {
+          if (orderDetailsData) {
+            // Convert events array to single event object
+            const event = Array.isArray((orderDetailsData as any).events)
+              ? (orderDetailsData as any).events[0]
+              : (orderDetailsData as any).events;
+
             const appUrl =
               process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
             const qrCodeUrl = `${appUrl}/dashboard`;
 
             await sendOrderConfirmationEmail({
-              to: orderDetails.email,
-              orderNumber: orderDetails.id,
-              eventTitle: (orderDetails.events as any).title,
-              eventDate: (orderDetails.events as any).date,
-              eventLocation: (orderDetails.events as any).location,
-              participantCount: orderDetails.order_items?.length || 0,
-              totalAmount: orderDetails.total_amount,
+              to: orderDetailsData.email,
+              orderNumber: orderDetailsData.id,
+              eventTitle: event?.title || "",
+              eventDate: event?.date || "",
+              eventLocation: event?.location || "",
+              participantCount: orderDetailsData.order_items?.length || 0,
+              totalAmount: orderDetailsData.total_amount,
               qrCodeUrl,
             });
 
-            console.log(`Confirmation email sent to ${orderDetails.email}`);
+            console.log(`Confirmation email sent to ${orderDetailsData.email}`);
           }
         } catch (emailError) {
           console.error("Failed to send confirmation email:", emailError);

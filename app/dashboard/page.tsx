@@ -1,19 +1,22 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { DashboardClient } from './page-client'
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { DashboardClient } from "./page-client";
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login')
+    redirect("/login");
   }
 
   // Fetch user's orders with event details
-  const { data: orders, error } = await supabase
-    .from('orders')
-    .select(`
+  const { data: ordersData, error } = await supabase
+    .from("orders")
+    .select(
+      `
       id,
       event_id,
       email,
@@ -28,13 +31,20 @@ export default async function DashboardPage() {
         date,
         location
       )
-    `)
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
+    `,
+    )
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
 
   if (error) {
-    console.error('Error fetching orders:', error)
+    console.error("Error fetching orders:", error);
   }
 
-  return <DashboardClient orders={orders || []} userEmail={user.email || ''} />
+  // Map the orders to convert events array to single event object
+  const orders = (ordersData || []).map((order: any) => ({
+    ...order,
+    events: Array.isArray(order.events) ? order.events[0] : order.events,
+  }));
+
+  return <DashboardClient orders={orders} userEmail={user.email || ""} />;
 }

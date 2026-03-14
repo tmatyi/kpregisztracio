@@ -77,7 +77,16 @@ export function OrderDetailsModal({
         .select("*")
         .eq("order_id", orderId);
 
-      if (orderData) setOrder(orderData as Order);
+      if (orderData) {
+        // Convert events array to single event object
+        const mappedOrder = {
+          ...orderData,
+          events: Array.isArray((orderData as any).events)
+            ? (orderData as any).events[0]
+            : (orderData as any).events,
+        };
+        setOrder(mappedOrder as Order);
+      }
       if (itemsData) setOrderItems(itemsData);
       setLoading(false);
     }

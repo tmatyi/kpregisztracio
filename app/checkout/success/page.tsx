@@ -1,25 +1,26 @@
-import { createClient } from '@/lib/supabase/server'
-import { notFound } from 'next/navigation'
-import { SuccessPageClient } from './page-client'
+import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import { SuccessPageClient } from "./page-client";
 
 interface SuccessPageProps {
   searchParams: {
-    orderId?: string
-  }
+    orderId?: string;
+  };
 }
 
 export default async function SuccessPage({ searchParams }: SuccessPageProps) {
-  const orderId = searchParams.orderId
+  const orderId = searchParams.orderId;
 
   if (!orderId) {
-    notFound()
+    notFound();
   }
 
-  const supabase = await createClient()
-  
-  const { data: order } = await supabase
-    .from('orders')
-    .select(`
+  const supabase = await createClient();
+
+  const { data: orderData } = await supabase
+    .from("orders")
+    .select(
+      `
       *,
       events (
         id,
@@ -27,18 +28,27 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
         date,
         location
       )
-    `)
-    .eq('id', orderId)
-    .single()
+    `,
+    )
+    .eq("id", orderId)
+    .single();
 
-  if (!order) {
-    notFound()
+  if (!orderData) {
+    notFound();
   }
 
-  const { data: orderItems } = await supabase
-    .from('order_items')
-    .select('*')
-    .eq('order_id', orderId)
+  // Convert events array to single event object
+  const order = {
+    ...orderData,
+    events: Array.isArray((orderData as any).events)
+      ? (orderData as any).events[0]
+      : (orderData as any).events,
+  };
 
-  return <SuccessPageClient order={order} orderItems={orderItems || []} />
+  const { data: orderItems } = await supabase
+    .from("order_items")
+    .select("*")
+    .eq("order_id", orderId);
+
+  return <SuccessPageClient order={order} orderItems={orderItems || []} />;
 }
