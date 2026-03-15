@@ -1,6 +1,9 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend only if API key is available
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 interface OrderConfirmationEmailProps {
   to: string;
@@ -23,6 +26,12 @@ export async function sendOrderConfirmationEmail({
   totalAmount,
   qrCodeUrl,
 }: OrderConfirmationEmailProps) {
+  // Skip email sending if Resend is not configured
+  if (!resend) {
+    console.warn("Resend API key not configured, skipping email send");
+    return { success: false, error: "Email service not configured" };
+  }
+
   try {
     const { data, error } = await resend.emails.send({
       from: "Re-Generáció <onboarding@resend.dev>",
