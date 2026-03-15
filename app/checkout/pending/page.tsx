@@ -1,12 +1,13 @@
 "use client";
 
+import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, Home } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-export default function PendingPage() {
+function PendingContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
 
@@ -52,5 +53,19 @@ export default function PendingPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function PendingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="animate-pulse">Loading...</div>
+        </div>
+      }
+    >
+      <PendingContent />
+    </Suspense>
   );
 }
